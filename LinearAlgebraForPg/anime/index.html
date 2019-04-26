@@ -1,0 +1,412 @@
+<!DOCTYPE HTML SYSTEM "http://www.w3.org/TR/REC-html40/strict.dtd">
+<html>
+<head>
+<title>『プログラミングのための線形代数』アニメーションで見る線形代数</title>
+<style type="text/css">
+<!--
+#li{
+#  width:88%;
+#  padding:0.5%;
+#  }
+p{
+  width:90%;
+  margin-left:3%;
+  }
+.code{
+  position:relative;
+  font-family:"Courier New",monospace;
+  font-size:75%;
+  background-color:#EEEEEE;
+  margin-left:6%;
+  padding:1%;
+  width:80%;
+  }
+.indent{
+  margin-left:7%;
+  }
+.date{
+  text-align:right;
+  }
+h2{
+  font-family:"Courier New",monospace;
+  font-size:120%;
+  background-color:#9F9FFF;
+  color:#000000;
+  padding:0.2em;
+  }
+h3{
+  font-family:"Courier New",monospace;
+  font-size:90%;
+  background-color:#FFFF99;
+  color:#000000;
+  padding:0.2em;
+  }
+h4{
+  font-family:"Courier New",monospace;
+  font-size:80%;
+  background-color:#FFFFFF;
+  color:#000000;
+  padding:0.2em;
+  }
+.no_margine_code{
+  position:relative;
+  font-family:"Courier New",monospace;
+  font-size:75%;
+  background-color:#EEEEEE;
+  margin-left:0%;
+  padding:1%;
+  width:95%;
+  }
+-->
+</style>
+</head>
+
+<body>
+
+<h1><img src="/common_image/ohmmark.gif" border=0 alt="Ohmmark">アニメーションで見る線形代数</h1>
+<a href="/index.htm" target="_top"><img src="/common_image/button1.gif" border=0 alt="Top"></a>
+<hr>
+
+<h2>行列は写像だ</h2>
+
+<p>
+行列は単なる「数字の表」ではありません。
+m×n 行列 A には、n 次元空間から m 次元空間への写像という意味があります。
+この写像を観察するアニメーションプログラム（2 次元空間から 2 次元空間の場合）の使い方をまとめます。
+</p>
+<p>
+このアニメーションプログラムは、
+書籍<a href="http://ssl.ohmsha.co.jp/cgi-bin/menu.cgi?ISBN=4-274-06578-2">
+『プログラミングのための線形代数』</a>のためのコンテンツです。詳しくは書籍を参照してください。
+</p>
+
+<ul>
+  <li><a href="#01-01">アニメーションプログラムの使い方</a></li>
+  <li><a href="#02-01">やってみよう</a>
+
+  <ul>
+    <li><a href="#02-02">こてしらべ：対角行列の観察</a></li>
+    <li><a href="#02-03">固有値・固有ベクトルと対角化の観察</a></li>
+    <li><a href="#02-04">ランクと正則性の観察</a></li>
+  </ul></li>
+  <li><a href="#03-01">もっと自由に試すには</a></li>
+  <li><a href="#04-01">仕組み</a></li>
+
+</ul>
+
+
+
+<a name="01-01"></a><h2>アニメーションプログラムの使い方</h2>
+
+<ul>
+ <li> <a href="http://www.ruby-lang.org/ja/">Ruby</a> と 
+      <a href="http://www.gnuplot.info/">Gnuplot</a> が
+      使えることを確認。</li>
+
+ <li> <a href="../mat_anim.rb">mat_anim.rb</a> を
+      カレントディレクトリに置く。</li>
+ <li> 書籍中で指示されたコマンドを入力。例えば
+<pre class="no_margine_code">
+ruby mat_anim.rb | gnuplot
+</pre></li>
+ <li> Enter キーでもう一度くりかえし。q を入力すれば終了。</li>
+ <li> 表示が速すぎたり遅すぎたりしたら、
+
+<pre  class="no_margine_code">
+ruby mat_anim.rb -frame=20 | gnuplot
+</pre>
+      などとして調整できます。数字が大きいほど滑らかで遅い描画になります。</li>
+</ul>
+
+<table width="550" cellpadding="5" bgcolor="#CCCCFF" class="line130">
+ <tr> 
+  <td>
+※本ファイルを利用したことによる直接あるいは間接的な損害に関して、
+著作者およびオーム社はいっさいの責任を負いかねます。利用は利用者個人の責任において行ってください。
+また、ソフトウェアの動作・実行環境、操作についての質問には一切お答えすることはできません。<br>
+※このページの Flash アニメーションは、<a href="http://madscientist.jp/~ikegami/ruby/ming/"> Ming/Ruby </a>を用いて作成したイメージです。
+実際のアニメーションは、<a href="../mat_anim.rb"> mat_anim.rb </a>を用いて確認してください。
+  </td>
+
+ </tr>
+</table>
+
+<a name="02-01"></a><h2>やってみよう</h2>
+
+<p>
+指定された 2×2 行列 A に対して、写像 y = A x を図示します。
+元の各点 x がこの写像でどこに移るかをアニメーション。
+</p>
+
+<p>観察ポイント：</p>
+<ul>
+ <li> 原点は原点のまま</li>
+
+ <li> 直線は直線に移る</li>
+ <li> 平行線は平行線に移る</li>
+</ul>
+
+<a name="02-02"></a><h3>こてしらべ：対角行列の観察</h3>
+
+<h4>■ まずは典型的な対角行列（本書 viii, 40, 66 ページ）</h4>
+
+<table>
+
+<tr><td rowspan="2"><i>A</i> = </td><td align="center">1.5<td align="center">0</tr>
+<tr><td align="center">0<td align="center">0.5</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=0 | gnuplot
+</pre>
+<embed src="mat_anime0.swf" type="application/x-shockwave-flash" width="500"></embed><br>
+<p>観察ポイント：</p>
+
+<ul>
+ <li> 縦横に伸縮。</li>
+ <li> 横方向は拡大（1.5倍）、縦方向は縮小（0.5倍）。</li>
+ <li> 各升目の面積は、1.5 * 0.5 = 0.75 倍になる。
+      この面積拡大率 0.75 が det A 。
+      だから、対角行列の行列式＝対角成分の積。</li>
+</ul>
+
+<h4>■ 対角成分に0があると……（本書 ix, 41 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>B</i> = </td><td align="center">0<td align="center">0</tr>
+<tr><td align="center">0<td align="center">0.5</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=1 | gnuplot  
+</pre>
+
+<embed type="application/x-shockwave-flash" src="mat_anime1.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 横が 0 倍 → ぺっちゃんこ。
+ <li> 面積拡大率 det B = 0
+</ul>
+
+<h4>■ さらにマイナスまでいくと……（本書 x, 41 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>C</i> = </td><td align="center">1.5<td align="center">0</tr>
+
+<tr><td align="center">0<td align="center">-0.5</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=2 | gnuplot  
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime2.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 縦が -0.5 倍 → 裏返し</li>
+
+ <li> こういうときが det C &lt; 0</li>
+</ul>
+
+<a name="02-03"></a><h3>固有値・固有ベクトルと対角化の観察</h3>
+
+<h4>■ 対角じゃない一般の行列だと、こんなふうに歪みます（本書 xi, 26, 55, 67, 117, 348 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>D</i> = </td><td align="center">1<td align="center">-0.3</tr>
+
+<tr><td align="center">-0.7<td align="center">0.6</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=3 | gnuplot  
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime3.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 歪む。</li>
+
+ <li> それでも「曲がる」わけじゃなく、直線は直線、平行は平行のまま。</li>
+ <li> D の 1 列目が (1,0)^T の行き先、2 列目が (0,1)^T の行き先
+      （^T は「転置」。縦ベクトルにするということ）。
+      この 2 つを知れば、全体の移り具合も見当がつく。</li>
+</ul>
+
+<h4>■ 固有ベクトルを描くと……（本書 xii, 41, 210, 214 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>D</i> = </td><td align="center">1<td align="center">-0.3</tr>
+
+<tr><td align="center">-0.7<td align="center">0.6</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=4 | gnuplot 
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime4.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 赤い矢印は伸び縮みするけど、方向は変わらない。こういうのが固有ベクトル。</li>
+
+ <li> 伸縮率が固有値。伸びてるほうは固有値 1.3、縮んでるほうは固有値 0.3</li>
+</ul>
+
+<h4>■ 固有ベクトルの方向に斜交座標をとると……（本書 xiii, 55, 211 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>D</i> = </td><td align="center">1<td align="center">-0.3</tr>
+<tr><td align="center">-0.7<td align="center">0.6</tr>
+
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=5 | gnuplot
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime5.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 座標軸方向にそった伸縮だけになる。</li>
+ <li> つまり、こういううまい座標をとれば、
+      対角行列のときと同じような状況にできる。
+      これが対角化ってこと。</li>
+
+ <li> 各升目の面積は、1.3 * 0.3 = 0.39 倍。
+      だから面積拡大率 det D = 0.39 = すべての固有値の積。</li>
+</ul>
+
+<a name="02-04"></a><h3>ランクと正則性の観察</h3>
+
+<h4>■ 行列によっては、空間がぺちゃんこにつぶされることもあります（本書 xiv, 44, 117 ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>E</i> = </td><td align="center">0.8<td align="center">-0.6</tr>
+
+<tr><td align="center">0.4<td align="center">-0.3</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=6 | gnuplot 
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime6.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 移った先はぺっちゃんこ（一直線）。この直線が E の像（Im A）。</li>
+
+ <li> 移った先（Im E）の次元数をランクという。
+      この例では直線だから1次元（rank E = 1）。</li>
+ <li> つぶれるってことは、移った先の次元が元より減るってこと（rank E &lt; 2）。
+      こういうのが特異行列。
+      もしつぶれなければ rank E = 2 のはずで、そういうのが正則行列。</li>
+ <li> つぶれてるんだから、面積拡大率 det E = 0</li>
+ <li> (1,0)^T の移り先（E の 1 列目）と (0,1)^T の移り先（E の 2 列目）が、
+      独立な方向じゃなくなっている。</li>
+
+</ul>
+
+
+<h4>■ 固有ベクトルを描くと……（本書 xv, xvi ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>E</i> = </td><td align="center">0.8<td align="center">-0.6</tr>
+<tr><td align="center">0.4<td align="center">-0.3</tr>
+</table>
+
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=7 | gnuplot
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime7.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> つぶれる＝固有値 0</li>
+</ul>
+
+
+<h4>■ 固有ベクトルの方向に斜行座標をとると……（本書 xvi ページ）</h4>
+
+<table>
+<tr><td rowspan="2"><i>E</i> = </td><td align="center">0.8<td align="center">-0.6</tr>
+<tr><td align="center">0.4<td align="center">-0.3</tr>
+</table>
+<p>コマンド：</p>
+<pre  class="code">
+ruby mat_anim.rb -s=8 | gnuplot 
+</pre>
+
+<embed type="application/x-shockwave-flash" src="mat_anime8.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 固有値0の固有ベクトル v にそった直線上の点は、みんな原点に移ってしまう。
+      この直線が E の核（Ker E）。</li>
+ <li> 他についても、v と平行な直線上の点はみんな一点に移ってしまう。</li>
+ <li> ってことは、移り先を聞いても、
+      元がどこだったかは特定できない。
+      逆行列が存在しないというのは、こういうこと。</li>
+ <li> 元の次元数（平面だから 2 次元） - つぶれた次元数（Ker E は直線だから 1 次元） = 残った次元数（Im E も直線だから 1 次元）
+      <br>これが次元定理。</li>
+
+</ul>
+
+<h3>行列式の交代性の観察</h3>
+<h4>■ 行列 D の列を入れ替えると……（本書 xvii ページ）</h4>
+<table>
+<tr><td rowspan="2"><i>F</i> = </td><td align="center">-0.3<td align="center">1</tr>
+<tr><td align="center">0.6<td align="center">-0.7</tr>
+</table>
+<p>コマンド：</p>
+
+<pre  class="code">
+ruby mat_anim.rb -s=9 | gnuplot
+</pre>
+<embed type="application/x-shockwave-flash" src="mat_anime9.swf" width="500"></embed><br>
+<p>観察ポイント：</p>
+<ul>
+ <li> 裏返しになる。こんなとき面積拡大率 det F &lt; 0</li>
+ <li> 行列 D と比べると、枠の平行四辺形は同じだが、中身が裏返し。<br>
+      だから、det D = - det F <br>
+      行列式の交代性とはこういうこと</li>
+</ul>
+
+
+<a name="03-01"></a><h2>もっと自由に試すには</h2>
+
+<ul>
+ <li> 行列を指定する
+      <pre  class="no_margine_code">
+
+# -s=3 と同じ
+ruby mat_anim.rb -a=1,-0.3,-0.7,0.6 | gnuplot
+      </pre></li>
+ <li> 矢印も指定する
+      <pre  class="no_margine_code">
+# -s=4 と同じ
+ruby mat_anim.rb -a=1,-0.3,-0.7,0.6 -arrow=0.3,0.7,0.5,-0.5 | gnuplot
+      </pre></li>
+ <li> 斜交座標を描く
+      <pre  class="no_margine_code">
+# -s=5 と同じ
+ruby mat_anim.rb -a=1,-0.3,-0.7,0.6 -xunit=0.3,0.7 -yunit=0.5,-0.5 -figure= | gnuplot
+      </pre></li>
+</ul>
+
+<a name="04-01"></a><h2>仕組み</h2>
+
+<p>
+gnuplot のコマンドを ruby で生成して標準出力に吐き、
+パイプ経由で送りつけてるだけ。
+以下のようにすれば動作を垣間見ることができます。
+</p>
+<pre class="code">
+ruby mat_anim.rb -batch
+</pre>
+
+
+<!--
+一旦ファイルに落とせば
+<pre  class="code">
+ruby mat_anim.rb > kuzu
+gnuplot kuzu
+</pre>
+-->
+
+</body>
+</html>
