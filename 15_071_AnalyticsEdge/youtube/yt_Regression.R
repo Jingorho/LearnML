@@ -1,3 +1,5 @@
+# 整理前
+
 head(video)
 colnames(video)
 video_reg <- video[c(17,18,19,20,23,24,25,26,27)] # 必要に応じて色々変える
