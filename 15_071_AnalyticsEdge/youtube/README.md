@@ -2,12 +2,13 @@
 データ: https://www.kaggle.com/datasnaek/youtube-new/kernels?sortBy=hotness&group=everyone&pageSize=20&datasetId=4549&language=R
 
 人気になる動画の傾向を調べる
+[結果一覧](https://docs.google.com/document/d/1ia-fGGLPObk6rZM8Lz1jNwq97rSB719sZ_s1T7r1lxE/edit?usp=sharing)
+
 
 ### やろうと思ってるTODO
 - タグに/descriptionに 含まれてると人気になるワードtop10
 - 時期と重なるワードを使ってれば人気出る（または使っても人気でない）ex. Christmas
 - てきすt分析x くらすた分析
-- 日本語形態素分析
 
 
 ### Done
@@ -15,6 +16,8 @@
 - タグが多ければviewは多いけどlikeは比較的少ない 検索に引っかかりやすくなるので -> No?
 - des/title/tagの最適な長さ -> ?
 - この時間帯にpublishされてれば
+- 日本語ワードクラウド
+- 英語ワードクラウド
 
 
 ### Discarded
