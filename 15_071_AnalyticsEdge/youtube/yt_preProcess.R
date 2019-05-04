@@ -3,18 +3,22 @@
 # 別のスクリプトではその出力したcsvを読み込むようにすればいい。
 # 逆に言えば、前処理を変えたかったらここを編集すると後ほど楽
 
+library(dplyr)
+
 options(scipen=999)
 setwd("/Users/yukako/WorkSpace/ML/15_071_AnalyticsEdge/Youtube/data")
 
 # インドや日本にするときはここのcsvファイルの名前を変える
-# video <- read.csv("USvideos.csv", encoding='utf-8')
-video <- read.csv("JPvideos.csv", encoding='utf-8')
-# video <- read.csv("INvideos.csv", encoding='utf-8')
+video_raw <- read.csv("USvideos.csv", encoding='utf-8')
+video_raw <- read.csv("JPvideos.csv", encoding='utf-8')
+video_raw <- read.csv("INvideos.csv", encoding='utf-8')
+video <- video_raw
 # とりあえずいろいろ見る
 # summary(video); head(video); str(video); dim(video);
 # dim(na.omit(video)) # NAないので不要
 
-
+video$video_id <- as.character(video$video_id) # 重複分を削除するときにcharacterとして扱う必要があるっぽい
+# (factorのまま扱うと、subsetとかで条件つけてデータを削除してもvideo_idはfactorのlevelとして残る)
 
 
 
@@ -40,10 +44,48 @@ video <- subset(video,
 # ------------
 video$trending_date <- as.POSIXct(as.character(video$trending_date), format="%y.%d.%m")
 video$publish_time <- as.POSIXct(video$publish_time, format="%Y-%m-%dT%H:%M:%S.000Z")
-# class(video$trending_date) # 確認
-# class(video$publish_time) # 確認
+threshold_date <- format(as.POSIXct("2017-12-01"), "%Y-%m")
+
+# ------------
+# 2017-12以降を抽出
+# ------------
+video <- video[format(video$publish_time, "%Y-%m") >= threshold_date, ]
+dim(video)
 
 
+# ------------
+# 重複したidから最新のトレンド日付の動画を抽出 + トレンド期間を算出
+# ------------
+# video_idの種類(実際の動画の種類の数)
+length(table(video$video_id))
+# 重複を除いた、実際の動画のvideo_idだけ抽出
+all_videoid <- levels(as.factor(video$video_id))
+# 重複分 = トレンドに入ってた日数(データサンプリングの間隔の日数によるけど)
+trend_duration <- table(video$video_id)
+
+latest_videos <- data.frame()
+# video_idでforループ回す(重いので注意)
+for(i in c(1:length(all_videoid))){
+  # このvideo_idに一致する全てのvideo抽出
+  videos_by_id <- subset(video, video$video_id == all_videoid[i])
+  videos_by_id$trending_date <- as.POSIXct(videos_by_id$trending_date) # 日付処理できるよう変換
+  # そのうち最新の日付を取得
+  latest_trending_date <- max(videos_by_id$trending_date)
+  # 最新の日付になってるvideoを抽出
+  latest_video <- video[which(video$video_id == all_videoid[i] & video$trending_date == latest_trending_date), ]
+  # トレンドに入ってた期間についての列を追加
+  latest_video$trend_dur <- trend_duration[i]
+  # JPはなぜか全く同じ動画(trending_dateやviewsやcommentsの数も同じ)が2つ現れることがある...
+  if(dim(latest_video)[1] != 1){
+    latest_video <- latest_video[1,]
+  }
+  
+  # latest_videosという空のデータフレームに、最新日付の動画をforのたびにどんどん追加していく
+  latest_videos <- rbind(latest_videos, latest_video)
+}
+video <- latest_videos
+head(video); dim(video)
+table(video$video_id) # 重複ない! yey
 
 
 # ------------
@@ -139,11 +181,49 @@ video$llikes <- log(video$likes)
 video$ldislikes <- log(video$dislikes)
 video$lcomments <- log(video$comment_count)
 
+# likeのrateの列追加
+video$likeRate <- video$likes / (video$likes + video$dislikes)
+
 
 
 # ------------
 # 人気度の指標(仮)
 # ------------
+
+# コメント数がthresholdより多く、かつlikeRateがthresholdより大きい
+threshold_com <- mean(video$comment_count)
+threshold_lR <- mean(video$likeRate)
+video$pop_com_lR <- (video$comment_count > threshold_com & video$likeRate > threshold_lR)
+
+# 閲覧数上位数パーセント
+video$pop85 <- (video$pop_com_lR & cume_dist(video$views) > 0.85)
+video$pop90 <- (video$pop_com_lR & cume_dist(video$views) > 0.90)
+video$pop95 <- (video$pop_com_lR & cume_dist(video$views) > 0.95)
+head(video)
+
+
+
+###############################
+# データ出力
+###############################
+
+# ここまでの加工をいちいちやるのが面倒なので、
+# csvに出力しちゃって、次回からそれを読み込めばいいってことにする(普段は上書きしないようにコメントアウト)
+write.csv(video, "INvideo_pd.csv", row.names=FALSE, col.names=TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ボツ
 
 # 案1 
 
@@ -161,30 +241,3 @@ video$lcomments <- log(video$comment_count)
 # thresholdIsSuperPop <- 18 # plot(video$pop)から目視で設定した
 # 閾値(18とテキトーに設定)より高ければsuperPop=1(めちゃ人気)、低ければ0(平凡)
 # video$superPop <- ifelse(video$pop > thresholdIsSuperPop, 1, 0)
-
-
-
-# 案2 
-
-# 閲覧数上位数パーセント
-library(dplyr)
-threshold <- 0.90
-video$pop <- cume_dist(video$views) > threshold
-
-
-
-
-
-###############################
-# データ出力
-###############################
-
-# ここまでの加工をいちいちやるのが面倒なので、
-# csvに出力しちゃって、次回からそれを読み込めばいいってことにする(普段は上書きしないようにコメントアウト)
-write.csv(video, "JPvideo_pd.csv", row.names=FALSE, col.names=TRUE)
-
-
-
-
-
-

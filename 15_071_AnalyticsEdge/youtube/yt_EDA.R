@@ -1,6 +1,7 @@
 # いろんな変数の関係を見るために色々やってみた(Exploratory Data Analysis)スクリプト。
 
-
+# install.packages("GGally")
+library(GGally)
 library(ggplot2)
 library(ggsci)
 
@@ -16,9 +17,15 @@ category_titles <- c("Film & Animation", "Autos & Vehicles", "Music", "Pets & An
 USvideo <- read.csv("USvideo_pd.csv")
 JPvideo <- read.csv("JPvideo_pd.csv")
 INvideo <- read.csv("INvideo_pd.csv")
-video <- USvideo
-# video <- JPvideo
-# video <- INvideo
+# video <- USvideo
+video <- JPvideo
+video <- INvideo
+
+
+###############################
+# 処理後のデータセットの基本情報
+###############################
+dim(video)
 
 
 
@@ -46,37 +53,101 @@ if(length(dif) != 0){
 # ------------
 category_freq <- data.frame(category_titles = ct$category_titles, 
                             table(video$category_id),
-                            pop = table(video$pop, video$category_id)[2,])
-category_freq$popRate <- category_freq$pop / category_freq$Freq * 100 # 人気動画の割合
+                            pop85Freq = table(video$pop85, video$category_id)[2,],
+                            pop90Freq = table(video$pop90, video$category_id)[2,],
+                            pop95Freq = table(video$pop95, video$category_id)[2,])
 category_freq <- category_freq[,-2] # 元々のid列はいらないので削除
-
+# 動画の総数のうちそのカテゴリの本数の割合がどれくらいか
+category_freq$Freq_rate <- category_freq$Freq / sum(category_freq$Freq) * 100
+# pop85が"そのカテゴリの中で"何割を占めるか(全体の中で何割を占めるか、ではない、そりゃ85%だろうから)
+category_freq$pop85Freq_rate <- category_freq$pop85Freq / category_freq$Freq * 100
+category_freq$pop90Freq_rate <- category_freq$pop90Freq / category_freq$Freq * 100
+category_freq$pop95Freq_rate <- category_freq$pop95Freq / category_freq$Freq * 100
+category_freq
 
 
 # ------------
 # カテゴリごとの視聴数
 # ------------
 category_freq$views <- ct$category_id
+category_freq$views85 <- ct$category_id
+category_freq$views90 <- ct$category_id
+category_freq$views95 <- ct$category_id
 # !!!!!!!!!!!!!! ↓本質ではないのでスルーしておk !!!!!!!!!!!!!!
 for(i in c(1:length(ct$category_id))){
   # カテゴリごとにforループ回して、viewsのsumを数えてる
   v <- subset(video$views, video$category_id == ct$category_id[i])
+  v85 <- subset(video$views, (video$pop85 & video$category_id == ct$category_id[i]))
+  v90 <- subset(video$views, (video$pop90 & video$category_id == ct$category_id[i]))
+  v95 <- subset(video$views, (video$pop95 & video$category_id == ct$category_id[i]))
   category_freq$views[i] <- sum(as.numeric(v)) # as.numeric入れないとwarningがうるさい
+  category_freq$views85[i] <- sum(as.numeric(v85))
+  category_freq$views90[i] <- sum(as.numeric(v90))
+  category_freq$views95[i] <- sum(as.numeric(v95))
 }
 # !!!!!!!!!!!!!! ↑ 本質ではないのでスルーしておk !!!!!!!!!!!!!!
-
+# カテゴリごとの視聴数を、全ての視聴数で割った
+category_freq$views_rate <- category_freq$views / sum(category_freq$views) * 100
+category_freq$views85_rate <- category_freq$views85 / sum(category_freq$views85) * 100
+category_freq$views90_rate <- category_freq$views90 / sum(category_freq$views90) * 100
+category_freq$views95_rate <- category_freq$views95 / sum(category_freq$views95) * 100
+category_freq
 
 
 # ------------
 # 描画
 # ------------
+colnames(category_freq)
 # g <- ggplot(category_id_freq, aes(x=category_id_titles, y=Freq)) # , fill = category_id_titles入れるとカラフル
-# g <- ggplot(category_freq, aes(x=category_titles, y=Freq, fill=views))
-g <- ggplot(category_freq, aes(x=category_titles, y=Freq, fill=popRate))
-g <- g + geom_bar(stat = "identity") # 棒グラフを指定
+g <- ggplot(category_freq, aes(x=category_titles, y=Freq, fill=views))
+# g <- ggplot(category_freq, aes(x = category_titles, y = Freq, fill = views_rate))
+g <- g + geom_bar(stat = "identity", position = "dodge") # 棒グラフを指定
 g <- g + ggtitle("Number of Videos per Categories") + xlab("Categories") + ylab("Frequency") # タイトルとかラベル
 g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1)) # ラベル縦書きの指定
 plot(g)
-ggsave("freq_category_JP.png") # 画像保存したいなら(名前変えないと上書きされるので注意)
+
+# 集合棒グラフのために特別な形式のデータセット作る
+category_freq_forGroup <- data.frame(
+  category_titles = category_freq$category_titles,
+  Freq = category_freq$Freq,
+  Freq_rate = category_freq$Freq_rate,
+  views = category_freq$views,
+  views_rate = category_freq$views_rate,
+  gr = "all"
+)
+category_freq_forGroup <- rbind(
+  category_freq_forGroup,
+  data.frame(category_titles = category_freq_forGroup$category_titles,
+             Freq = category_freq$pop85Freq,
+             Freq_rate = category_freq$pop85Freq_rate,
+             views = category_freq$views85,
+             views_rate = category_freq$views85_rate,
+             gr = "pop85"),
+  data.frame(category_titles = category_freq_forGroup$category_titles,
+             Freq = category_freq$pop90Freq,
+             Freq_rate = category_freq$pop90Freq_rate,
+             views = category_freq$views90,
+             views_rate = category_freq$views90_rate,
+             gr = "pop90"),
+  data.frame(category_titles = category_freq_forGroup$category_titles,
+             Freq = category_freq$pop95Freq,
+             Freq_rate = category_freq$pop95Freq_rate,
+             views = category_freq$views95,
+             views_rate = category_freq$views95_rate,
+             gr = "pop95"))
+category_freq_forGroup
+colnames(category_freq_forGroup)
+# g <- ggplot(category_freq_forGroup, aes(x = category_titles, y = Freq, fill = gr))
+# g <- ggplot(category_freq_forGroup, aes(x = category_titles, y = Freq_rate, fill = gr))
+g <- ggplot(category_freq_forGroup, aes(x = category_titles, y = views, fill = gr))
+# g <- ggplot(category_freq_forGroup, aes(x = category_titles, y = views_rate, fill = gr))
+g <- g + geom_bar(stat = "identity", position = position_dodge()) # 棒グラフを指定
+g <- g + ggtitle("Number of Videos per Categories") + xlab("Categories") + ylab("Frequency") # タイトルとかラベル
+# g <- g + geom_text(aes(x = category_titles, y = Freq, label = Freq, vjust = -0.5, group = gr), # 数値ラベルの位置をグループの水準ごとの位置に配置する
+#                    position = position_dodge(width = 0.9)) # 指定しないとエラーが表示される
+g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1)) # ラベル縦書きの指定
+plot(g)
+# ggsave("views_rate_category_US.png") # 画像保存したいなら(名前変えないと上書きされるので注意)
 # 集合棒グラフもできるので必要であればいってください
 
 
@@ -93,17 +164,22 @@ splitedTags[2] # 確認
 # lapply()は、第二引数の処理を第一引数に対して並列実行する便利な関数
 # unlist()は、lapplyの結果が特殊な形式なので、それをただの数値列に戻す関数
 video$tagCounts <- unlist(lapply(splitedTags, length))
-# いろいろ表示してみる
-hist(video$tagCounts, breaks=100)
-corMatrix <- cor( data.frame(
-  views = log(video$views), 
-  likes = log(video$likes), 
-  dislikes = log(video$dislikes), 
-  comments = log(video$comment_count),
+tag_counts <- data.frame(
   tagCounts = video$tagCounts,
-  pop = video$pop) )
-# 四捨五入してスッキリ見る
-round(corMatrix, 3) # よくわからんがtag長ければいいってわけじゃない
+  gr = "all"
+)
+tag_counts <- rbind(
+  tag_counts,
+  data.frame(tagCounts = subset(video$tagCounts, video$pop85), gr = "pop85"),
+  data.frame(tagCounts = subset(video$tagCounts, video$pop90), gr = "pop90"),
+  data.frame(tagCounts = subset(video$tagCounts, video$pop95), gr = "pop95"))
+# ヒストグラム
+g <- ggplot(tag_counts, aes(x = tagCounts, fill = gr))
+g <- g + geom_histogram(position = "identity", alpha = 0.8, binwidth=1)
+g <- g + geom_density(aes(color = gr, alpha = 0.2), show.legend = F)
+g <- g + ggtitle("Number of tags") + xlab("counts") + ylab("Frequency")
+plot(g)
+# hist(video$tagCounts, breaks=100)
 
 
 
@@ -113,19 +189,23 @@ round(corMatrix, 3) # よくわからんがtag長ければいいってわけじ�
 video$description <- as.character(video$description)
 nchar(video$description[1]) # 文字列の長さを調べるnchar()の確認
 video$descLen <- unlist(lapply(video$description, nchar))
-# いろいろ表示してみる
-hist(video$descLen, breaks=100) # 右肩下がり
-corMatrix <- cor( data.frame(
-  views = log(video$views), 
-  likes = log(video$likes), 
-  dislikes = log(video$dislikes), 
-  comments = log(video$comment_count),
-  tagCounts = video$tagCounts,
+desc_length <- data.frame(
   descLen = video$descLen,
-  pop = video$pop) )
-round(corMatrix, 3)
-
-
+  gr = "all"
+)
+desc_length <- rbind(
+  desc_length,
+  data.frame(descLen = subset(video$descLen, video$pop85), gr = "pop85"),
+  data.frame(descLen = subset(video$descLen, video$pop90), gr = "pop90"),
+  data.frame(descLen = subset(video$descLen, video$pop95), gr = "pop95"))
+# ヒストグラム
+g <- ggplot(desc_length, aes(x = descLen, fill = gr))
+g <- g + geom_histogram(position = "identity", alpha = 0.8, binwidth=30)
+g <- g + geom_density(aes(color = gr, alpha = 0.2), show.legend = F)
+# g <- g + scale_y_continuous(limits = c(0, 80))
+g <- g + ggtitle("description length") + xlab("counts") + ylab("Frequency")
+plot(g)
+# hist(video$descLen, breaks=100)
 
 
 ###############################
@@ -138,30 +218,72 @@ round(corMatrix, 3)
 video$title <- as.character(video$title)
 nchar(video$title[1]) # 文字列の長さを調べるnchar()
 video$titleLen <- unlist(lapply(video$title, nchar))
-# いろいろ表示してみる
-hist(video$titleLen, breaks=100)
-corMatrix <- cor( data.frame(
-  views = log(video$views), 
-  likes = log(video$likes), 
-  dislikes = log(video$dislikes), 
-  comments = log(video$comment_count),
-  tagCounts = video$tagCounts,
-  descLen = video$descLen,
+title_length <- data.frame(
   titleLen = video$titleLen,
-  pop = video$pop) )
-round(corMatrix, 3)
-# たぶん、人気度popやviewsを目的変数にRegressionしたら、
-# tagCountsやdescriptionLenやtitleLenは有意差なしになるんだろうなーと予測が立つ
+  gr = "all"
+)
+title_length <- rbind(
+  title_length,
+  data.frame(titleLen = subset(video$titleLen, video$pop85), gr = "pop85"),
+  data.frame(titleLen = subset(video$titleLen, video$pop90), gr = "pop90"),
+  data.frame(titleLen = subset(video$titleLen, video$pop95), gr = "pop95"))
+# ヒストグラム
+g <- ggplot(title_length, aes(x = titleLen, fill = gr))
+g <- g + geom_histogram(position = "identity", alpha = 0.8, binwidth=1)
+g <- g + geom_density(aes(color = gr, alpha = 0.2), show.legend = F)
+g <- g + ggtitle("title length") + xlab("counts") + ylab("Frequency")
+plot(g)
+# hist(video$descLen, breaks=100)
+
+
+
 
 
 ###############################
 # いろいろ表示してみる(処理重いので注意)
 ###############################
-pairs( data.frame( log(video$views), 
-                   log(video$likes), 
-                   log(video$dislikes), 
-                   log(video$comment_count),
-                   video$tagCounts,
-                   video$descLen,
-                   video$titleLen,
-                   video$pop), cex=0.1)
+colnames(video)
+cordf <- data.frame(
+  logviews = log(video$views), 
+  loglikes = log(video$likes), 
+  logdislikes = log(video$dislikes), 
+  logcomments = log(video$comment_count),
+  trend_dur = video$trend_dur,
+  likeRate = video$likeRate,
+  tagcounts = video$tagCounts,
+  desclength = video$descLen,
+  titlelength = video$titleLen,
+  gr = "all")
+vi <- subset(video, video$pop85)
+vi <- subset(video, video$pop90)
+vi <- subset(video, video$pop95)
+cordf <- rbind(
+  cordf,
+  data.frame(
+    logviews = log(vi$views), 
+    loglikes = log(vi$likes), 
+    logdislikes = log(vi$dislikes), 
+    logcomments = log(vi$comment_count),
+    trend_dur = vi$trend_dur,
+    likeRate = vi$likeRate,
+    tagcounts = vi$tagCounts,
+    desclength = vi$descLen,
+    titlelength = vi$titleLen,
+    gr = "pop95") # 85,90でもやる
+)
+# 散布図行列(時間かかるので注意)
+g <- ggpairs(cordf, 
+        aes_string(colour="gr", alpha=0.3), 
+        upper = list(continuous = wrap("cor", size = 2.3)), 
+        lower = list(continuous=wrap("points", size=0.05)))
+g <- g + theme(axis.text= element_text(size=5),
+               legend.title = element_text(size=7),
+               legend.text = element_text(size=7),
+               axis.title = element_text(size=7),
+               plot.title = element_text(size=7),
+               strip.text = element_text(size=7))
+g # plot(g)じゃないので注意
+
+# corMatrix <- cor(subset(cordf[-c()], cordf$gr == "all"))
+# round(corMatrix, 3)
+# pairs(corMatrix , cex=0.1)

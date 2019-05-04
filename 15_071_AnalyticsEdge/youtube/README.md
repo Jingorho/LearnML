@@ -9,6 +9,8 @@
 - タグに/descriptionに 含まれてると人気になるワードtop10
 - 時期と重なるワードを使ってれば人気出る（または使っても人気でない）ex. Christmas
 - てきすt分析x くらすた分析
+- 時期限定12-5月
+- 被ってるIDをlatestに限定 + trending durationにする
 
 
 ### Done
