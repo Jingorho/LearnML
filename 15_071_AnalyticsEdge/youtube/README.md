@@ -1,21 +1,21 @@
 # Youtube Analytics
-データ: https://www.kaggle.com/datasnaek/youtube-new/kernels?sortBy=hotness&group=everyone&pageSize=20&datasetId=4549&language=R
+[データ](https://www.kaggle.com/datasnaek/youtube-new/kernels?sortBy=hotness&group=everyone&pageSize=20&datasetId=4549&language=R)
 
 人気になる動画の傾向を調べる
+<br>
+
 [結果一覧](https://docs.google.com/document/d/1ia-fGGLPObk6rZM8Lz1jNwq97rSB719sZ_s1T7r1lxE/edit?usp=sharing)
 
 
 ### やろうと思ってるTODO
-- タグに/descriptionに 含まれてると人気になるワードtop10
-- 時期と重なるワードを使ってれば人気出る（または使っても人気でない）ex. Christmas
-- てきすt分析x くらすた分析
-- 時期限定12-5月
-- 被ってるIDをlatestに限定 + trending durationにする
-
+- 日本語tree
+- てきすt分析 x くらすた分析
 
 ### Done
+- 被ってるIDをlatestに限定 + trending durationにする
+- 時期限定2017-12月以降
 - 国ごとの人気カテゴリ
-- タグが多ければviewは多いけどlikeは比較的少ない 検索に引っかかりやすくなるので -> No?
+- タグが多ければviewは多いけどlikeは比較的少ない 検索に引っかかりやすくなるので -> Noぽい
 - des/title/tagの最適な長さ -> ?
 - この時間帯にpublishされてれば
 - 日本語ワードクラウド
@@ -26,10 +26,12 @@
 - サムネに文字が入ってるか、色がカラフルか
 - desに絵文字が含まれてるか、どれくらい含まれてるか
 - タグがタイトルにこれくらい含まれてれば
+- タグに/descriptionに 含まれてると人気になるワードtop10
+- 時期と重なるワードを使ってれば人気出る（または使っても人気でない）ex. Christmas
 
 
+メモ
 
-### めも
 人気の定義 = views?likes? views+likes? log(views)? comments? dislikes?
 
 人気 =

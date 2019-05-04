@@ -88,9 +88,10 @@ removeTerms <- c(stopwords("english"), "youtube", "video", "channel", "that",
                  "show", "watch", "can", "make", "subscrib", "us", "use",
                  "facebook", "twitter", "instagram", "subscribe")
 video$description <- gsub("video", "", video$description) # なぜかremoveWordsで"video"がremoveできないので無理やり削除
-desc85 <- tolower(video$description[which(video$pop85==TRUE)])
-desc90 <- tolower(video$description[which(video$pop90==TRUE)])
-desc85 <- tolower(video$description[which(video$pop95==TRUE)])
+textall <- tolower(video$description)
+text85 <- tolower(video$description[which(video$pop85==TRUE)])
+text90 <- tolower(video$description[which(video$pop90==TRUE)])
+text95 <- tolower(video$description[which(video$pop95==TRUE)])
 
 
 
@@ -103,15 +104,18 @@ desc85 <- tolower(video$description[which(video$pop95==TRUE)])
 # ------------
 # USとIN : ワードクラウド
 # ------------
-text <- desc85
-text <- desc90
-text <- desc95
+text <- textall
+text <- text85
+text <- text90
+text <- text95
 # text <- as.character(text)
 corpus <- makeCorpus(text)
 dtm <- TermDocumentMatrix(corpus)
 m <- as.matrix(dtm)
 v <- sort(rowSums(m), decreasing = TRUE)
 d <- data.frame(word = names(v), freq = v)
+# なんかINの"subscrib"という単語だけなぜか削除できないので力技で消す
+d <- subset(d, d$word != "subscrib")
 head(d, 10)
 # ワードクラウド描画!
 wordcloud(d$word, d$freq, 
@@ -123,10 +127,12 @@ wordcloud(d$word, d$freq,
 # JP
 # ------------
 # http://www.ic.daito.ac.jp/~mizutani/mining/rmecab_func.html
-write.table(desc85, file="JPtext85.txt", row.names=F, col.names=F)
-write.table(desc90, file="JPtext90.txt", row.names=F, col.names=F)
-write.table(desc95, file="JPtext95.txt", row.names=F, col.names=F)
+write.table(textall, file="JPtextall.txt", row.names=F, col.names=F)
+write.table(text85, file="JPtext85.txt", row.names=F, col.names=F)
+write.table(text90, file="JPtext90.txt", row.names=F, col.names=F)
+write.table(text95, file="JPtext95.txt", row.names=F, col.names=F)
 
+JPtext_nounverb <- make_nounverb_JP("JPtextall.txt")
 JPtext_nounverb <- make_nounverb_JP("JPtext85.txt")
 JPtext_nounverb <- make_nounverb_JP("JPtext90.txt")
 JPtext_nounverb <- make_nounverb_JP("JPtext95.txt")
@@ -152,31 +158,52 @@ wordcloud(JPtext_nounverb$Term, JPtext_nounverb$Freq,
 # ------------
 # USとIN
 # ------------
-text <- desc85
-text <- desc90
-text <- desc95
+text <- textall
 # text <- as.character(text)
 corpus <- makeCorpus(text)
 frequencies = DocumentTermMatrix(corpus)
 findFreqTerms(frequencies, lowfreq=1000)
 findFreqTerms(frequencies, lowfreq=500)
-sparse = removeSparseTerms(frequencies, atleaset_percentage); dim(sparse)
+sparse = removeSparseTerms(frequencies, 0.90); dim(sparse)
 document_terms = as.data.frame(as.matrix(sparse))
 str(document_terms); dim(document_terms)
 # head(document_terms)
 
 
-# 目的変数はpop(めちゃ人気かどうか)
-document_terms$pop = video$pop
-# document_terms$pop = subset(video$pop, video$publish_month == month)
+# ------------
+# JP
+# ------------
+head(JPtext_nounverb)
+head(document_terms)
+
+# 目的変数はpopXX
+document_terms$pop85 = video$pop85
+document_terms$pop90 = video$pop90
+document_terms$pop95 = video$pop95
 
 # Reciataionでは日付を元にsplitしてたけど、今回は単にランダムに6:4でtrain:test
 split1 = sample(row.names(document_terms), 0.6*nrow(document_terms))
 split2 = setdiff(row.names(document_terms), split1)
 train = document_terms[split1,]
 test = document_terms[split2,]
-cart = rpart(pop ~ ., data=train, method="class", cp = .003)
+
+# 結構実行ごとに結果変わる...
+
+train <- train[, !(colnames(train) %in% c("pop90", "pop95"))] # 85%だけ抽出
+test <- test[, !(colnames(test) %in% c("pop90", "pop95"))] # 85%だけ抽出
+cart = rpart(pop85 ~ ., data = train, method="class", cp = .003)
 prp(cart, cex=0.8)
+
+train <- train[, !(colnames(train) %in% c("pop85", "pop95"))] # 90%だけ抽出
+test <- test[, !(colnames(test) %in% c("pop85", "pop95"))] # 90%だけ抽出
+cart = rpart(pop90 ~ ., data = train, method="class", cp = .003)
+prp(cart, cex=0.8)
+
+train <- train[, !(colnames(train) %in% c("pop85", "pop90"))] # 95%だけ抽出
+test <- test[, !(colnames(test) %in% c("pop85", "pop90"))] # 95%だけ抽出
+cart = rpart(pop95 ~ ., data = train, method="class", cp = .003)
+prp(cart, cex=0.8)
+
 
 
 
