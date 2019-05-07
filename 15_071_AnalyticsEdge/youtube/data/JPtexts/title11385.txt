@@ -1,0 +1,1 @@
+"ダメ元で検証・iPhone6でマクドナルドのNFC TypeA/B支払いは可能なのか？Apple Payの実験"

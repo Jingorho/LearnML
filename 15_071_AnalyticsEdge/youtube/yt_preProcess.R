@@ -186,6 +186,33 @@ video$likeRate <- video$likes / (video$likes + video$dislikes)
 
 
 
+
+
+# ------------
+# tag counts
+# ------------
+video$tags <- as.character(video$tags)
+splitedTags <- strsplit(video$tags, "[|]") # | という文字で分割
+video$tagCounts <- unlist(lapply(splitedTags, length))
+# ------------
+# description length
+# ------------
+video$description <- as.character(video$description)
+video$descLen <- unlist(lapply(video$description, nchar))
+# ------------
+# title length
+# ------------
+video$title <- as.character(video$title)
+video$titleLen <- unlist(lapply(video$title, nchar))
+
+
+
+
+
+
+
+
+
 # ------------
 # 人気度の指標(仮)
 # ------------
