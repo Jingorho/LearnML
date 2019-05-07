@@ -159,6 +159,8 @@ makeWordFreq_wc <- function(){
   latterwords200 <- wordsall[200:length(wordsall$freq),]
 }
 
+
+# 実行
 makeWordFreq_wc()
 # write.csv(formerwords, "IN_former_words.csv")
 # write.csv(formerwords200, "IN_former200_words.csv")
@@ -200,6 +202,7 @@ makeWordFreq_wc_JP <- function(){
   latterwords200 <- wordsall[200:length(wordsall$Freq),]
 }
 
+# 実行
 makeWordFreq_wc_JP()
 # write.csv(former_words, "JP_former_words.csv")
 # write.csv(former_words, "JP_former200_words.csv")
@@ -216,30 +219,6 @@ wordcloud(latterwords$Term, latterwords$Freq,
 wordcloud(latterwords200$Term, latterwords200$Freq, 
           color=rainbow(5), random.order=F, random.color=F)
 head(wordsall,50)
-
-
-
-
-
-
-# ワードクラウド描画!
-wordcloud(wordsall$word, wordsall$freq, 
-          color=rainbow(5), random.order=F, random.color=F)
-# head(wordsall$word, 50)
-
-t <- wordsall[id[200:length(wordsall$word)],]
-wordcloud(t$Term, t$Freq,
-          color=rainbow(5), random.order=F, random.color=F)
-
-onlypop10_words <- setdiff(words10$word, words90$word) # pop10%にあってallにないやつ
-onlywords10 <- data.frame()
-for(i in c(1:length(onlypop10_words))){
-  temp <- words10[(words10$word == onlypop10_words[i]),]
-  onlywords10 <- rbind(onlywords10, temp)
-}
-
-# ワードクラウド描画!
-
 
 
 
@@ -289,9 +268,12 @@ head(wordsall)
 # head(document_terms)
 # rownames(docterm) <- c(1:dim(docterm)[1])
 # head(docterm[1:10,1:10])
-t <- as.character(text90)
+t <- as.character(text10)
+removedFile <- c()
 makeDocumentTerms_JP <- function(dontMakeFile, t){
   if(!dontMakeFile){
+    fileList <- list.files("JPtexts")
+    file.remove(paste("JPtexts/", fileList, sep=""))
     dir.create("JPtexts")
     for(i in c(1:length(t))){
       fname <- paste("JPtexts/", i, ".txt", sep="")
@@ -300,7 +282,7 @@ makeDocumentTerms_JP <- function(dontMakeFile, t){
   }
   dt <- docMatrix("JPtexts", 
                   pos=c("名詞", "動詞", "形容詞")) # MeCabの関数
-  dt <- dt[rowSums(dt) >= 2,] # 全文書を通しての総頻度が 2 以上のターム
+  dt <- dt[rowSums(dt) >= 2,] # 全文書を通しての総頻度が 2 以上のタームのみ残す
   
   dt_transpose_df <- data.frame(t(matrix(as.matrix(dt), nrow(dt), ncol(dt))))
   rownames(dt_transpose_df) <- colnames(dt)
@@ -310,7 +292,6 @@ makeDocumentTerms_JP <- function(dontMakeFile, t){
   dt <- dt[,-c(1,2)] # 最初の2列は集計なので削除
   str(dt)
   dim(dt)
-  removedFile <- c()
   for(i in c(1:length(t))){
     if(sum(rownames(dt) %in% paste(i, ".txt", sep="")) == 0){
       removedFile <- c(removedFile, i)
@@ -321,7 +302,7 @@ makeDocumentTerms_JP <- function(dontMakeFile, t){
 }
 t[604]
 docterm <- dt
-docterm <- makeDocumentTerms_JP(T, textall)
+docterm <- makeDocumentTerms_JP(T, text10)
 dim(docterm)
 # docterm$pop90 <- c(T,F,T,T,F,T,T,F,F,F,T,F,T,T,F,T,T,F,F,F,F,T,T,F)
 
@@ -330,7 +311,9 @@ sum(video$pop90)
 v <- video[video$pop90,]
 v <- v[-removedFile,]
 # 目的変数はpopXX
-docterm$pop90 = (v$tagCounts < 20)
+colnames(v)
+summary(v$descLen)
+docterm$pop90 = (v$descLen < 100)
 # docterm$pop = video$pop_com_lR
 # sum(docterm$pop90)
 # str(docterm)
@@ -341,7 +324,7 @@ split2 = setdiff(row.names(docterm), split1)
 train = docterm[split1,]
 test = docterm[split2,]
 dim(train)
-
+par(family = "HiraKakuProN-W3")
 cart = rpart(pop90 ~ ., data = docterm, method = "class", cp = .00000003)
 prp(cart, cex=0.8)
 sum(train$pop90)
