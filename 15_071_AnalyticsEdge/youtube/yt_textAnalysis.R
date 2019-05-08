@@ -24,12 +24,11 @@ options(scipen=999)
 setwd("/Users/yukako/WorkSpace/ML/15_071_AnalyticsEdge/Youtube/data")
 
 USvideo <- read.csv("USvideo_pd.csv")
-JPvideo <- read.csv("JPvideo_pd.csv")
 INvideo <- read.csv("INvideo_pd.csv")
 video <- USvideo
-video <- JPvideo
 video <- INvideo
 head(video)
+
 
 ###############################
 # テキストの前処理
@@ -73,42 +72,6 @@ makeCorpus <- function(t){
   corpus = tm_map(corpus, removeWords, removeTerms) # ほかあれば追加
   corpus = tm_map(corpus, stemDocument)
   return (corpus)
-}
-
-# ------------
-# JP用の関数 : 単語の頻度表リスト作成
-# ------------
-make_wordsFreq_JP <- function(t){
-  write.table(t, file="JPtext.txt", row.names=F, col.names=F)
-  JPtextFreq <- RMeCabFreq("JPtext.txt")
-  JPtext <- JPtextFreq[JPtextFreq$Info1 == "名詞" | JPtextFreq$Info1 == "動詞" | JPtextFreq$Info1 == "副詞" | JPtextFreq$Info1 == "形容詞",]
-  # いらなそうなやつを調べる
-  # table(JPtext$Info1, JPtext$Info2)
-  # subset(JPtext, JPtext$Info1 == "動詞" & JPtext$Info2 == "接尾")
-  # "がる、させる、す、せる、られる、れる" を削除
-  JPtext <- JPtext[-which(JPtext$Info1 == "動詞" & JPtext$Info2 == "接尾"),]
-  # "こちら、あっち、あいつ、彼、みなさん"などを削除
-  JPtext <- JPtext[-which(JPtext$Info1 == "名詞" & JPtext$Info2 == "代名詞"),]
-  # 数字を削除
-  JPtext <- JPtext[-which(JPtext$Info1 == "名詞" & JPtext$Info2 == "数"),]
-  
-  # 頻出単語をチラ見
-  # JPtext_nv[order(JPtext_nv$Freq, decreasing=T)[1:20],]
-  # 頻出単語にゴミが混ざってるので手動で削除(日本語よう)
-  removeTerms <- c(removeTerms, "動画", "チャンネル", "登録", "\"", "nn",
-                   "する", "いる", "ある", "なる", "こと", "てる", "くる", "やる",
-                   "videos", "さん", "の", "ん", "Youtuber", 
-                   "\"\"", "再生", "リスト", "nnn", "お願い", "！", "゙",
-                   "みる", "〜", "ー", "-", "／", "「", "」", "2018", "2017", "2018年", "2017年",
-                   "フェイスブック", "ツイッター", "インスタグラム")
-  JPtext <- JPtext[-which(JPtext$Term %in% removeTerms),]
-  # "aa"とか"ld"とか"`"とか無意味な単語とか記号を削除
-  JPtext <- JPtext[-which(nchar(JPtext$Term, type = "bytes") <= 2),]
-  
-  # 頻度で降順に並べる
-  JPtext <- JPtext[order(JPtext$Freq, decreasing = T),]
-  
-  return(JPtext)
 }
 
 
@@ -157,7 +120,10 @@ makeWordFreq_wc <- function(){
   formerwords200 <- wordsall[1:200,]
   latterwords <- wordsall[id:length(wordsall$freq),]
   latterwords200 <- wordsall[200:length(wordsall$freq),]
+  head(formerwords200); dim(formerwords200)
+  write.csv(formerwords200, "IN_formerwords200.csv")
 }
+
 
 
 # 実行
@@ -178,47 +144,6 @@ wordcloud(latterwords200$word, latterwords200$freq,
           color=rainbow(5), random.order=F, random.color=F)
 # 時間かかるというか終わらないので、キリのいいところで強制終了して止めるしかない...?
 
-
-
-# ------------
-# JP
-# ------------
-# http://www.ic.daito.ac.jp/~mizutani/mining/rmecab_func.html
-makeWordFreq_wc_JP <- function(){
-  wordsall <- make_wordsFreq_JP(textall)
-  words90 <- make_wordsFreq_JP(text90)
-  words10 <- make_wordsFreq_JP(text10)
-  
-  onlypop10_words <- setdiff(words10$Term, words90$Term) # pop10%にあってallにないやつ
-  onlywords10 <- data.frame()
-  for(i in c(1:length(onlypop10_words))){
-    temp <- words10[(words10$Term == onlypop10_words[i]),]
-    onlywords10 <- rbind(onlywords10, temp)
-  }
-  id <- round(length(words10$Term)*0.5)
-  formerwords <- wordsall[1:id,]
-  formerwords200 <- wordsall[1:200,]
-  latterwords <- wordsall[id:length(wordsall$Freq),]
-  latterwords200 <- wordsall[200:length(wordsall$Freq),]
-}
-
-# 実行
-makeWordFreq_wc_JP()
-# write.csv(former_words, "JP_former_words.csv")
-# write.csv(former_words, "JP_former200_words.csv")
-# write.csv(onlywords10, "JP_onlyWords10.csv")
-
-# par(family = "Osaka") # 日本語フォント使えるようにする設定。WindowsとMacで違うかも
-par(family = "HiraKakuProN-W3")
-
-# ワードクラウド描画!
-wordcloud(onlywords10$Term, onlywords10$Freq, 
-          color=rainbow(5), random.order=F, random.color=F)
-wordcloud(latterwords$Term, latterwords$Freq, 
-          color=rainbow(5), random.order=F, random.color=F)
-wordcloud(latterwords200$Term, latterwords200$Freq, 
-          color=rainbow(5), random.order=F, random.color=F)
-head(wordsall,50)
 
 
 
@@ -246,12 +171,12 @@ makeDocumentTerms <- function(t, p){
   # dim(dt)
   return(dt)
 }
+
 # t <- textall
 # p <- 0.99
-docterm <- makeDocumentTerms(text10, 0.99)
-write.csv(docterm, "IN_text10.csv", col.names=T, row.names=F)
-docterm <- makeDocumentTerms(text10, 0.99)
-dim(docterm)
+docterm <- makeDocumentTerms(textall, 0.995)
+head(docterm); dim(docterm)
+write.csv(docterm, "IN_textall.csv", col.names=T, row.names=F)
 docterm <- docterm[, !(colnames(docterm) %in% former_words$word)]
 docterm <- docterm[, !(colnames(docterm) %in% former200_words$word)]
 dim(docterm)
@@ -259,54 +184,6 @@ str(docterm)
 head(docterm)
 
 
-
-# ------------
-# JP
-# ------------
-head(wordsall)
-
-# head(document_terms)
-# rownames(docterm) <- c(1:dim(docterm)[1])
-# head(docterm[1:10,1:10])
-t <- as.character(text10)
-removedFile <- c()
-makeDocumentTerms_JP <- function(dontMakeFile, t){
-  if(!dontMakeFile){
-    fileList <- list.files("JPtexts")
-    file.remove(paste("JPtexts/", fileList, sep=""))
-    dir.create("JPtexts")
-    for(i in c(1:length(t))){
-      fname <- paste("JPtexts/", i, ".txt", sep="")
-      write.table(t[i], file=fname, row.names=F, col.names=F)
-    }
-  }
-  dt <- docMatrix("JPtexts", 
-                  pos=c("名詞", "動詞", "形容詞")) # MeCabの関数
-  dt <- dt[rowSums(dt) >= 2,] # 全文書を通しての総頻度が 2 以上のタームのみ残す
-  
-  dt_transpose_df <- data.frame(t(matrix(as.matrix(dt), nrow(dt), ncol(dt))))
-  rownames(dt_transpose_df) <- colnames(dt)
-  colnames(dt_transpose_df) <- rownames(dt)
-  
-  dt <- as.data.frame(dt_transpose_df)
-  dt <- dt[,-c(1,2)] # 最初の2列は集計なので削除
-  str(dt)
-  dim(dt)
-  for(i in c(1:length(t))){
-    if(sum(rownames(dt) %in% paste(i, ".txt", sep="")) == 0){
-      removedFile <- c(removedFile, i)
-    }
-  }
-  
-  return(dt)
-}
-t[604]
-docterm <- dt
-docterm <- makeDocumentTerms_JP(T, text10)
-dim(docterm)
-# docterm$pop90 <- c(T,F,T,T,F,T,T,F,F,F,T,F,T,T,F,T,T,F,F,F,F,T,T,F)
-
-# ------------
 sum(video$pop90)
 v <- video[video$pop90,]
 v <- v[-removedFile,]
@@ -324,7 +201,6 @@ split2 = setdiff(row.names(docterm), split1)
 train = docterm[split1,]
 test = docterm[split2,]
 dim(train)
-par(family = "HiraKakuProN-W3")
 cart = rpart(pop90 ~ ., data = docterm, method = "class", cp = .00000003)
 prp(cart, cex=0.8)
 sum(train$pop90)
